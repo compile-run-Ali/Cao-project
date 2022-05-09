@@ -1,4 +1,11 @@
 #include <Arduino.h>
+#include <wifi.h>
+
+//my wifi name and password
+const char* wifiName="HASEEB";
+const char* wifiPassword="65464816";
+WiFiServer server(80);
+
 //these are the GPIO pins of esp32
 const int trigPin = 27;//setting the trig pin
 const int echoPin = 25;//setting the echo pin 
@@ -17,6 +24,19 @@ void setup() {
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
   pinMode(echoPin, INPUT); // Sets the echoPin as an Input
   pinMode (ledPin, OUTPUT);//sets the ledPin as another output
+
+  Serial.print("Connecting to ");
+  Serial.println(wifiName);
+  WiFi.begin(wifiName, wifiPassword);
+  while (WiFi.status() != WL_CONNECTED) {
+  delay(1000);
+  Serial.print("Trying to connect to Wifi Network");
+  }
+  Serial.println("");
+  Serial.println("Successfully connected to WiFi network");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  server.begin();
 }
 
 void loop() {
