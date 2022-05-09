@@ -1,8 +1,8 @@
 #include <Arduino.h>
-
-const int trigPin = 27;
-const int echoPin = 25;
-const int ledPin=18;
+//these are the GPIO pins of esp32
+const int trigPin = 27;//setting the trig pin
+const int echoPin = 25;//setting the echo pin 
+const int ledPin=18;//setting the ledpin
 
 //define sound speed in cm/uS
 #define SOUND_SPEED 0.034
@@ -16,7 +16,7 @@ void setup() {
   Serial.begin(115200); // Starts the serial communication
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
   pinMode(echoPin, INPUT); // Sets the echoPin as an Input
-  pinMode (ledPin, OUTPUT);
+  pinMode (ledPin, OUTPUT);//sets the ledPin as another output
 }
 
 void loop() {
@@ -32,7 +32,7 @@ void loop() {
   duration = pulseIn(echoPin, HIGH);
   
   // Calculate the distance
-  distanceCm = duration * SOUND_SPEED/2;
+  distanceCm = duration * SOUND_SPEED/2;//s=vt
   
   // Convert to inches
   distanceInch = distanceCm * CM_TO_INCH;
@@ -42,14 +42,14 @@ void loop() {
   Serial.println(distanceCm);
   Serial.print("Distance (inch): ");
   Serial.println(distanceInch);
-  if(distanceCm<=20){
+  if(distanceCm<=20){//open the door if distance less than 20cm
     digitalWrite(ledPin, HIGH);
       Serial.print("Opening Door!");
   }
-  else{
+  else{//close the door otherwise
     digitalWrite(ledPin, LOW);
     Serial.print("Door Closed!");
   }
   
-  delay(3000);
+  delay(5000);//5 second delay before loop resarts
 }
