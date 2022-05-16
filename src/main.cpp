@@ -2,9 +2,17 @@
 #include <wifi.h>
 
 // my wifi name and password
-const char *wifiName = "HASEEB";
-const char *wifiPassword = "65464816";
+const char* ssid = "HASEEB";
+const char* password = "65464816";
+
+// Set web server port number to 80
 WiFiServer server(80);
+
+// Variable to store the HTTP request
+String header;
+
+// Auxiliar variables to store the current output state
+String output18State = "off";
 
 // these are the GPIO pins of esp32
 const int trigPin = 27; // setting the trig pin
@@ -19,26 +27,34 @@ long duration;
 float distanceCm;
 float distanceInch;
 
+// Current time
+unsigned long currentTime = millis();
+// Previous time
+unsigned long previousTime = 0; 
+// Define timeout time in milliseconds (example: 2000ms = 2s)
+const long timeoutTime = 2000;
+
 void setup()
 {
-  Serial.begin(115200);     // Starts the serial communication
+  Serial.begin(9600);     // Starts the serial communication
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
   pinMode(echoPin, INPUT);  // Sets the echoPin as an Input
   pinMode(ledPin, OUTPUT);  // sets the ledPin as another output
 
+  // Connect to Wi-Fi network with SSID and password
   Serial.print("Connecting to ");
-  Serial.println(wifiName);
-  WiFi.begin(wifiName, wifiPassword);
-  while (WiFi.status() != WL_CONNECTED)//checks if the wifi is connected
-  {
-    delay(1000);
-    Serial.print("Trying to connect to Wifi Network");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
   }
+  // Print local IP address and start web server
   Serial.println("");
-  Serial.println("Successfully connected to WiFi network");
+  Serial.println("WiFi connected.");
   Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());//prints the Ip adress so we can go there
-  server.begin();//start the server
+  Serial.println(WiFi.localIP());
+  server.begin();
 }
 
 void loop()
