@@ -1,25 +1,27 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>ESP IOT DASHBOARD</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <script src="http://cdn.rawgit.com/Mikhus/canvas-gauges/gh-pages/download/2.1.7/all/gauge.min.js"></script>
-  </head>
-  <body>
-    <div class="topnav">
-      <h1>GATE</h1>
-    </div>
-    <div class="content">
-      <div class="card-grid">
-        <div class="card">
-          <p class="card-title">Distance</p>
-          <canvas id="distance"></canvas>
-        </div>
-      </div>
-    </div>
-    <script src="script.js"></script>
-  </body>
+<head>
+  <title>ESP32 Web Server</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <h1>ESP32 Web Server</h1>
+  <p>The gate is: <strong id="Distance"> %DISTANCE%</strong></p>
+  <p><a href="/on"><button class="button">OPEN</button></a></p>
+  <p><a href="/off"><button class="button button2">CLOSE</button></a></p>
+</body>
+<script>
+  setInterval(function ( ) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("Distance").innerHTML = this.responseText;
+    }
+  };
+  xhttp.open("GET", "/", true);
+  xhttp.send();
+}, 1000 ) ;
+</script>
 </html>

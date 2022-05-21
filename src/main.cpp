@@ -6,7 +6,6 @@
 #include <SPIFFS.h>
 #include <Adafruit_sensor.h>
 #include <Adafruit_BME280.h>
-#include <Arduino_JSON.h>
 
 // my wifi name and password
 const char *ssid = "HASEEB";
@@ -30,20 +29,7 @@ const int ledPin = 18;  // setting the ledpin
 String ledState;
 
 // Replaces placeholder with LED state value
-String processor(const String& var){
-  Serial.println(var);
-  if(var == "STATE"){
-    if(digitalRead(ledPin)){
-      ledState = "ON";
-    }
-    else{
-      ledState = "OFF";
-    }
-    Serial.print(ledState);
-    return ledState;
-  }
-  return String();
-}
+
 // define sound speed in cm/uS
 #define SOUND_SPEED 0.034
 #define CM_TO_INCH 0.393701
@@ -60,6 +46,7 @@ unsigned long previousTime = 0;
 const long timeoutTime = 2000;
 
 String getDistance(){
+
   // Clears the trigPin
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -74,7 +61,13 @@ String getDistance(){
   return String(distanceCm);
 }
 
-
+String processor(const String& var){
+  Serial.println(var);
+  if(var == "DISTANCE"){
+    return getDistance();
+  }
+  return String();
+}
 
 void setup()
 {
@@ -104,27 +97,37 @@ void setup()
   // Print ESP32 Local IP Address
   Serial.println(WiFi.localIP());
 
-  // Route for root / web page
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    // Route for root / web page
+ server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/index.html", String(), false, processor);
   });
-  
-  // Route to load style.css file
-  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/style.css", "text/css");
+  server.on("/distance", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/plain", getDistance().c_str());
   });
 
-  // Route to set GPIO to HIGH
-  server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){
-    digitalWrite(ledPin, HIGH);    
-    request->send(SPIFFS, "/index.html", String(), false, processor);
-  });
+
+
+  // // Route for root / web page
+  // server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+  //   request->send(SPIFFS, "/index.html", String(), false, processor);
+  // });
   
-  // Route to set GPIO to LOW
-  server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request){
-    digitalWrite(ledPin, LOW);    
-    request->send(SPIFFS, "/index.html", String(), false, processor);
-  });
+  // // Route to load style.css file
+  // server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+  //   request->send(SPIFFS, "/style.css", "text/css");
+  // });
+
+  // // Route to set GPIO to HIGH
+  // server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){
+  //   digitalWrite(ledPin, HIGH);    
+  //   request->send(SPIFFS, "/index.html", String(), false, getDistance);
+  // });
+  
+  // // Route to set GPIO to LOW
+  // server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request){
+  //   digitalWrite(ledPin, LOW);    
+  //   request->send(SPIFFS, "/index.html", String(), false, processor);
+  // });
 
   // Start server
   server.begin();
