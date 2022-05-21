@@ -1,12 +1,21 @@
 #include <Arduino.h>
 #include <wifi.h>
+#include <ESPmDNS.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <SPIFFS.h>
+#include <Adafruit_sensor.h>
+#include <Adafruit_BME280.h>
+#include <Arduino_JSON.h>
 
 // my wifi name and password
 const char *ssid = "HASEEB";
 const char *password = "65464816";
 
 // Set web server port number to 80
-WiFiServer server(80);
+AsyncWebServer server(80);
+
+
 
 // Variable to store the HTTP request
 String header;
@@ -18,7 +27,23 @@ String output18State = "off";
 const int trigPin = 27; // setting the trig pin
 const int echoPin = 25; // setting the echo pin
 const int ledPin = 18;  // setting the ledpin
+String ledState;
 
+// Replaces placeholder with LED state value
+String processor(const String& var){
+  Serial.println(var);
+  if(var == "STATE"){
+    if(digitalRead(ledPin)){
+      ledState = "ON";
+    }
+    else{
+      ledState = "OFF";
+    }
+    Serial.print(ledState);
+    return ledState;
+  }
+  return String();
+}
 // define sound speed in cm/uS
 #define SOUND_SPEED 0.034
 #define CM_TO_INCH 0.393701
@@ -34,6 +59,23 @@ unsigned long previousTime = 0;
 // Define timeout time in milliseconds (example: 2000ms = 2s)
 const long timeoutTime = 2000;
 
+String getDistance(){
+  // Clears the trigPin
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  // Sets the trigPin on HIGH state for 10 micro seconds
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin, HIGH);
+  // Calculating the distance
+  distanceCm = duration * SOUND_SPEED / 2;
+  return String(distanceCm);
+}
+
+
+
 void setup()
 {
   Serial.begin(9600);       // Starts the serial communication
@@ -41,153 +83,89 @@ void setup()
   pinMode(echoPin, INPUT);  // Sets the echoPin as an Input
   pinMode(ledPin, OUTPUT);  // sets the ledPin as another output
 
-  // Connect to Wi-Fi network with SSID and password
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
-    Serial.print(".");
+    // Initialize SPIFFS
+  if(!SPIFFS.begin(true)){
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
   }
-  // Print local IP address and start web server
-  Serial.println("");
-  Serial.println("WiFi connected.");
-  Serial.println("IP address: ");
+    File file = SPIFFS.open("/index.html");
+  if(!file){
+    Serial.println("Failed to open file for reading");
+    return;
+  }
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi..");
+  }
+
+  // Print ESP32 Local IP Address
   Serial.println(WiFi.localIP());
+
+  // Route for root / web page
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/index.html", String(), false, processor);
+  });
+  
+  // Route to load style.css file
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/style.css", "text/css");
+  });
+
+  // Route to set GPIO to HIGH
+  server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){
+    digitalWrite(ledPin, HIGH);    
+    request->send(SPIFFS, "/index.html", String(), false, processor);
+  });
+  
+  // Route to set GPIO to LOW
+  server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request){
+    digitalWrite(ledPin, LOW);    
+    request->send(SPIFFS, "/index.html", String(), false, processor);
+  });
+
+  // Start server
   server.begin();
 }
 
 void loop()
 {
-  WiFiClient client = server.available(); // Listen for incoming clients
 
-  if (client)
-  { // If a new client connects,
-    currentTime = millis();
-    previousTime = currentTime;
-    Serial.println("New Client."); // print a message out in the serial port
-    String currentLine = "";       // make a String to hold incoming data from the client
-    while (client.connected() && currentTime - previousTime <= timeoutTime)
-    { // loop while the client's connected
-      currentTime = millis();
-      if (client.available())
-      {                         // if there's bytes to read from the client,
-        char c = client.read(); // read a byte, then
-        Serial.write(c);        // print it out the serial monitor
-        header += c;
-        if (c == '\n')
-        { // if the byte is a newline character
-          // if the current line is blank, you got two newline characters in a row.
-          // that's the end of the client HTTP request, so send a response:
-          if (currentLine.length() == 0)
-          {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-            // and a content-type so the client knows what's coming, then a blank line:
-            client.println("HTTP/1.1 200 OK");
-            client.println("Content-type:text/html");
-            client.println("Connection: close");
-            client.println();
+            //     // Clears the trigPin
+            // digitalWrite(trigPin, LOW);
+            // delayMicroseconds(2);
+            // // Sets the trigPin on HIGH state for 10 micro seconds
+            // digitalWrite(trigPin, HIGH);
+            // delayMicroseconds(10);
+            // digitalWrite(trigPin, LOW);
 
-            // turns the GPIOs on and off
-            if (header.indexOf("GET /18/on") >= 0)
-            {
-              Serial.println("GPIO 18 on");
-              output18State = "on";
-              digitalWrite(ledPin, HIGH);
-            }
-            else if (header.indexOf("GET /18/off") >= 0)
-            {
-              Serial.println("GPIO 18 off");
-              output18State = "off";
-              digitalWrite(ledPin, LOW);
-            }
+            // // Reads the echoPin, returns the sound wave travel time in microseconds
+            // duration = pulseIn(echoPin, HIGH);
 
-            // Display the HTML web page
-            client.println("<!DOCTYPE html><html>");
-            client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
-            client.println("<link rel=\"icon\" href=\"data:,\">");
-            // CSS to style the on/off buttons
-            // Feel free to change the background-color and font-size attributes to fit your preferences
-            client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
-            client.println(".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;");
-            client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
-            client.println(".button2 {background-color: #555555;}</style></head>");
+            // // Calculate the distance
+            // distanceCm = duration * SOUND_SPEED / 2; // s=vt
 
-            // Web Page Heading
-            client.println("<body><h1>ESP32 Web Server</h1>");
+            // // Convert to inches
+            // distanceInch = distanceCm * CM_TO_INCH;
 
-            // Display current state, and ON/OFF buttons for GPIO 26
-            client.println("<p>GPIO 18 - State " + output18State + "</p>");
-            // If the output26State is off, it displays the ON button
-            if (output18State == "off")
-            {
-              client.println("<p><a href=\"/18/on\"><button class=\"button\">Closed</button></a></p>");
-            }
-            else
-            {
-              client.println("<p><a href=\"/18/off\"><button class=\"button button2\">Open</button></a></p>");
-            }
+            // // Prints the distance in the Serial Monitor
+            // Serial.print("Distance (cm): ");
+            // Serial.println(distanceCm);
+            // Serial.print("Distance (inch): ");
+            // Serial.println(distanceInch);
+            // if (distanceCm <= 20)
+            // { // open the door if distance less than 20cm
+            //   digitalWrite(ledPin, HIGH);
+            //   Serial.print("Opening Door!");
+            // }
+            // else
+            // { // close the door otherwise
+            //   digitalWrite(ledPin, LOW);
+            //   Serial.print("Door Closed!");
+            // }
 
-            client.println("</body></html>");
-
-            // The HTTP response ends with another blank line
-            client.println();
-            // Break out of the while loop
-            break;
-          }
-          else
-          { // if you got a newline, then clear currentLine
-            currentLine = "";
-          }
-        }
-        else if (c != '\r')
-        {                   // if you got anything else but a carriage return character,
-          currentLine += c; // add it to the end of the currentLine
-        }
-      }
-    }
-    // Clear the header variable
-    header = "";
-    // Close the connection
-    client.stop();
-    Serial.println("Client disconnected.");
-    Serial.println("");
-  }
-  else{
-                // Clears the trigPin
-            digitalWrite(trigPin, LOW);
-            delayMicroseconds(2);
-            // Sets the trigPin on HIGH state for 10 micro seconds
-            digitalWrite(trigPin, HIGH);
-            delayMicroseconds(10);
-            digitalWrite(trigPin, LOW);
-
-            // Reads the echoPin, returns the sound wave travel time in microseconds
-            duration = pulseIn(echoPin, HIGH);
-
-            // Calculate the distance
-            distanceCm = duration * SOUND_SPEED / 2; // s=vt
-
-            // Convert to inches
-            distanceInch = distanceCm * CM_TO_INCH;
-
-            // Prints the distance in the Serial Monitor
-            Serial.print("Distance (cm): ");
-            Serial.println(distanceCm);
-            Serial.print("Distance (inch): ");
-            Serial.println(distanceInch);
-            if (distanceCm <= 20)
-            { // open the door if distance less than 20cm
-              digitalWrite(ledPin, HIGH);
-              Serial.print("Opening Door!");
-            }
-            else
-            { // close the door otherwise
-              digitalWrite(ledPin, LOW);
-              Serial.print("Door Closed!");
-            }
-
-            delay(5000); // 5 second delay before loop resarts
-  }
+            // delay(5000); // 5 second delay before loop resarts
+  
 }
