@@ -57,6 +57,7 @@ float getDistance()
   duration = pulseIn(echoPin, HIGH);
   // Calculating the distance
   distanceCm = duration * SOUND_SPEED / 2;
+  Serial.println(distanceCm);
   return distanceCm;
 }
 
@@ -102,10 +103,11 @@ void setup()
   // Print ESP32 Local IP Address
   Serial.println(WiFi.localIP());
 
-  // Route for root / web page
+  //Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             {if(getDistance()<20){
                 digitalWrite(ledPin, HIGH); 
+                // delay(5000);
             }
             else{
               digitalWrite(ledPin,LOW);
@@ -115,6 +117,7 @@ void setup()
 
   // // Route for root / web page
   // server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+
   //   request->send(SPIFFS, "/index.html", String(), false, processor);
   // });
 
