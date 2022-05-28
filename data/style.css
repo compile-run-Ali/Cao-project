@@ -4,8 +4,16 @@ html {
     margin: 0px auto;
     text-align: center;
   }
+  body{
+    background-color: rgb(32, 40, 72);
+    color: rgb(247, 240, 240);
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.4em;
+    min-width: 230px;
+  }
   h1{
-    color: #0F3376;
+    color: #e6eaf1;
     padding: 2vh;
   }
   p{

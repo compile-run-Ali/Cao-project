@@ -1,27 +1,47 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>ESP32 Web Server</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" type="text/css" href="style.css">
-</head>
-<body>
-  <h1>ESP32 Web Server</h1>
-  <p>The gate is: <strong id="Distance"> %DISTANCE%</strong></p>
-  <p><a href="/on"><button class="button">OPEN</button></a></p>
-  <p><a href="/off"><button class="button button2">CLOSE</button></a></p>
-</body>
-<script>
-  setInterval(function ( ) {
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("Distance").innerHTML = this.responseText;
+  <head>
+    <title>ESP32 Car Entry System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+    <h1>ESP32 Web Server</h1>
+    <p>The car is: <strong id="Distance"> %DISTANCE%</strong> cm away</p>
+    <p>The door is <strong id='door'>-</strong></p>
+    <hr/>
+    <h1>Override Controls</h1>
+    <hr/>
+    <p>
+      <a href="/on"><button class="button">OPEN</button></a>
+    </p>
+    <p>
+      <a href="/off"><button class="button button2">CLOSE</button></a>
+    </p>
+  </body>
+  <script>
+    setInterval(function () {
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+          var parser = new DOMParser();
+          var xmlDoc = parser.parseFromString(this.responseText, "text/xml");
+          var distance = xmlDoc.querySelector("#Distance").innerHTML;
+          console.log(distance);
+          document.getElementById("Distance").innerHTML = distance;
+          setdoor(distance);
+        }
+      };
+      xhttp.open("GET", "/", true);
+      xhttp.send();
+    }, 2000);
+    function setdoor(distance) {
+      if (eval(distance) < 20) {
+        document.getElementById("door").innerHTML = "OPEN";
+      } else {
+        document.getElementById("door").innerHTML = "CLOSED";
+      }
     }
-  };
-  xhttp.open("GET", "/", true);
-  xhttp.send();
-}, 1000 ) ;
-</script>
+  </script>
 </html>
